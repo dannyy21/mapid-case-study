@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../../data/models/feature_attribute.dart';
+import '../../data/models/layer_feature.dart';
 import '../../data/models/map_layer.dart';
 
 class MapLayerRenderer {
@@ -9,9 +11,15 @@ class MapLayerRenderer {
 
   static const pointLayerId = 'mapid-points';
   static const labelLayerId = 'mapid-labels';
+  static const _selectedLayerId = 'mapid-selected';
   static const _sourceId = 'mapid-source';
   static const _cameraPadding = 64.0;
   static const _singlePointZoom = 15.0;
+  static const _noSelectionFilter = [
+    '==',
+    ['id'],
+    '',
+  ];
 
   final MapLibreMapController _controller;
 
@@ -31,7 +39,7 @@ class MapLayerRenderer {
       _sourceId,
       labelLayerId,
       const SymbolLayerProperties(
-        textField: [Expressions.get, 'NAMA'],
+        textField: [Expressions.get, FeatureAttribute.name],
         textFont: ['Noto Sans Regular'],
         textSize: 11,
         textAnchor: 'top',
@@ -43,6 +51,37 @@ class MapLayerRenderer {
         textHaloWidth: 1.5,
       ),
       minzoom: 13,
+    );
+    await _controller.addCircleLayer(
+      _sourceId,
+      _selectedLayerId,
+      const CircleLayerProperties(
+        circleRadius: 11,
+        circleColor: '#E53935',
+        circleStrokeWidth: 4,
+        circleStrokeColor: '#FFFFFF',
+      ),
+      belowLayerId: labelLayerId,
+      filter: _noSelectionFilter,
+    );
+  }
+
+  Future<void> highlight(LayerFeature? feature) {
+    return _controller.setFilter(
+      _selectedLayerId,
+      feature == null
+          ? _noSelectionFilter
+          : [
+              '==',
+              ['id'],
+              feature.id,
+            ],
+    );
+  }
+
+  Future<void> focusOn(LayerFeature feature) async {
+    await _controller.animateCamera(
+      CameraUpdate.newLatLng(LatLng(feature.latitude, feature.longitude)),
     );
   }
 
