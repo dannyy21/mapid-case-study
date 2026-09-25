@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
+import 'data/services/mapid_layer_service.dart';
 import 'features/map/map_screen.dart';
 
 class MapidApp extends StatelessWidget {
-  const MapidApp({super.key});
+  const MapidApp({super.key, required this.layerService});
+
+  final MapidLayerService layerService;
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +15,7 @@ class MapidApp extends StatelessWidget {
       title: 'MAPID Map',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const MapScreen(),
+      home: MapScreen(layerService: layerService),
     );
   }
 }
