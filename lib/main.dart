@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MaterialApp(home: Scaffold()));
+import 'app.dart';
+import 'core/config/env.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Env.load();
+  runApp(const MapidApp());
 }
