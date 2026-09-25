@@ -1,0 +1,61 @@
+{
+  "layer_id": "layer-1",
+  "layer_name": "Pariwisata Jogja",
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "f-1",
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          110.368369,
+          -7.799231
+        ]
+      },
+      "properties": {
+        "NAMA": "TAMAN TIMUR PASAR BERINGHARJO",
+        "ALAMAT": "JL. SRIWEDANI, YOGYAKARTA",
+        "KECAMATAN": "GONDOMANAN",
+        "KABKOT": "KOTA YOGYAKARTA",
+        "WAKTU": "Q2 2024"
+      }
+    },
+    {
+      "id": "f-2",
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          110.3832,
+          -7.8093
+        ]
+      },
+      "properties": {
+        "NAMA": "TAMAN WARUNGBOTO (ʦ�ʦ�ʧ�)",
+        "ALAMAT": "",
+        "WAKTU": null
+      }
+    },
+    {
+      "id": "f-3",
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            110.1,
+            -7.1
+          ],
+          [
+            110.2,
+            -7.2
+          ]
+        ]
+      },
+      "properties": {
+        "NAMA": "IGNORED LINE"
+      }
+    }
+  ]
+}
