@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'core/config/env.dart';
+import 'data/services/location_service.dart';
 import 'data/services/mapid_layer_service.dart';
 
 Future<void> main() async {
@@ -15,5 +16,10 @@ Future<void> main() async {
     projectId: Env.mapidProjectId,
   );
 
-  runApp(MapidApp(layerService: layerService));
+  runApp(
+    MapidApp(
+      layerService: layerService,
+      locationService: const LocationService(),
+    ),
+  );
 }
