@@ -10,6 +10,7 @@ import '../../data/services/mapid_layer_service.dart';
 import 'map_layer_renderer.dart';
 import 'map_view_model.dart';
 import 'widgets/feature_popup.dart';
+import 'widgets/layer_error_banner.dart';
 import 'widgets/map_action_buttons.dart';
 
 class MapScreen extends StatefulWidget {
@@ -138,70 +139,61 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('MAPID Map')),
-      body: Stack(
-        children: [
-          MapLibreMap(
-            styleString: MapConstants.styleUrl,
-            initialCameraPosition: MapConstants.initialCamera,
-            onMapCreated: _onMapCreated,
-            onStyleLoadedCallback: _onStyleLoaded,
-            onMapClick: _onMapClick,
-          ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
-            child: SafeArea(
-              top: false,
-              child: ListenableBuilder(
-                listenable: _viewModel,
-                builder: (context, _) => _buildBottomOverlay(),
-              ),
-            ),
-          ),
-        ],
+    return ListenableBuilder(
+      listenable: _viewModel,
+      child: MapLibreMap(
+        styleString: MapConstants.styleUrl,
+        initialCameraPosition: MapConstants.initialCamera,
+        onMapCreated: _onMapCreated,
+        onStyleLoadedCallback: _onStyleLoaded,
+        onMapClick: _onMapClick,
       ),
-    );
-  }
+      builder: (context, map) {
+        final layer = _viewModel.layer;
+        final feature = _viewModel.selectedFeature;
+        final layerError = _viewModel.layerError;
 
-  Widget _buildBottomOverlay() {
-    final feature = _viewModel.selectedFeature;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: MapActionButtons(
-            isLocating: _viewModel.isLocating,
-            onLocate: _locateUser,
-            onShowAll: _viewModel.layer == null ? null : _showAllPlaces,
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(layer?.name ?? 'MAPID Map'),
+            bottom: _viewModel.layerStatus == LayerStatus.loading
+                ? const PreferredSize(
+                    preferredSize: Size.fromHeight(4),
+                    child: LinearProgressIndicator(),
+                  )
+                : null,
           ),
-        ),
-        const SizedBox(height: 16),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position: Tween(
-                begin: const Offset(0, 0.2),
-                end: Offset.zero,
-              ).animate(animation),
-              child: child,
-            ),
+          body: Stack(
+            children: [
+              map!,
+              if (layerError != null)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  right: 16,
+                  child: LayerErrorBanner(
+                    message: layerError,
+                    onRetry: _viewModel.loadLayer,
+                  ),
+                ),
+            ],
           ),
-          child: feature == null
-              ? const SizedBox.shrink()
+          floatingActionButton: feature == null
+              ? MapActionButtons(
+                  isLocating: _viewModel.isLocating,
+                  onLocate: _locateUser,
+                  onShowAll: layer == null ? null : _showAllPlaces,
+                )
+              : null,
+          bottomSheet: feature == null
+              ? null
               : FeaturePopup(
                   key: ValueKey(feature.id),
                   feature: feature,
                   onClose: _clearSelection,
                 ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

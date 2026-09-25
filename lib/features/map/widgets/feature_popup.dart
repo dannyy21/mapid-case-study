@@ -17,11 +17,10 @@ class FeaturePopup extends StatelessWidget {
       feature[FeatureAttribute.city],
     ].nonNulls.join(', ');
 
-    return Card(
-      elevation: 6,
-      margin: EdgeInsets.zero,
+    return SafeArea(
+      top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
+        padding: const EdgeInsets.fromLTRB(24, 12, 12, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
