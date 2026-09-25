@@ -22,3 +22,15 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+subprojects {
+    if (name == "app") return@subprojects
+    plugins.withType<JavaBasePlugin> {
+        val javaToolchains = extensions.getByType<JavaToolchainService>()
+        tasks.withType<JavaCompile>().configureEach {
+            javaCompiler.set(javaToolchains.compilerFor {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            })
+        }
+    }
+}
