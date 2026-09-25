@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' show Point;
 
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -80,7 +80,7 @@ class _MapScreenState extends State<MapScreen> {
     final location = _viewModel.userLocation;
     if (location != null && location != _renderedLocation) {
       _renderedLocation = location;
-      await renderer.showDeviceLocation(location);
+      await renderer.showUserLocation(location);
     }
   }
 

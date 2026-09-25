@@ -2,33 +2,30 @@ import 'dart:math' as math;
 
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../../data/models/device_location.dart';
 import '../../data/models/feature_attribute.dart';
 import '../../data/models/layer_feature.dart';
 import '../../data/models/map_layer.dart';
-import '../../data/models/device_location.dart';
 
 class MapLayerRenderer {
   MapLayerRenderer(this._controller);
 
-  static const pointLayerId = 'mapid-points';
-  static const labelLayerId = 'mapid-labels';
-  static const _selectedLayerId = 'mapid-selected';
   static const _sourceId = 'mapid-source';
+  static const _pointLayerId = 'mapid-points';
+  static const _labelLayerId = 'mapid-labels';
+  static const _selectedLayerId = 'mapid-selected';
   static const _userSourceId = 'user-location-source';
   static const _userHaloLayerId = 'user-location-halo';
   static const _userDotLayerId = 'user-location-dot';
-  static const _userLocationZoom = 15.0;
+
+  static const _cameraPadding = 64.0;
+  static const _focusZoom = 15.0;
+  static const _labelMinZoom = 13.0;
+
   static const _emptyCollection = {
     'type': 'FeatureCollection',
     'features': <Map<String, dynamic>>[],
   };
-  static const _cameraPadding = 64.0;
-  static const _singlePointZoom = 15.0;
-  static const _noSelectionFilter = [
-    '==',
-    ['id'],
-    '',
-  ];
 
   final MapLibreMapController _controller;
 
@@ -61,7 +58,7 @@ class MapLayerRenderer {
     await _controller.addGeoJsonSource(_sourceId, layer.toGeoJson());
     await _controller.addCircleLayer(
       _sourceId,
-      pointLayerId,
+      _pointLayerId,
       const CircleLayerProperties(
         circleRadius: 7,
         circleColor: '#E53935',
@@ -72,7 +69,7 @@ class MapLayerRenderer {
     );
     await _controller.addSymbolLayer(
       _sourceId,
-      labelLayerId,
+      _labelLayerId,
       const SymbolLayerProperties(
         textField: [Expressions.get, FeatureAttribute.name],
         textFont: ['Noto Sans Regular'],
@@ -86,7 +83,7 @@ class MapLayerRenderer {
         textHaloWidth: 1.5,
       ),
       belowLayerId: _userHaloLayerId,
-      minzoom: 13,
+      minzoom: _labelMinZoom,
     );
     await _controller.addCircleLayer(
       _sourceId,
@@ -97,21 +94,15 @@ class MapLayerRenderer {
         circleStrokeWidth: 4,
         circleStrokeColor: '#FFFFFF',
       ),
-      belowLayerId: labelLayerId,
-      filter: _noSelectionFilter,
+      belowLayerId: _labelLayerId,
+      filter: _idFilter(''),
     );
   }
 
   Future<void> highlight(LayerFeature? feature) {
     return _controller.setFilter(
       _selectedLayerId,
-      feature == null
-          ? _noSelectionFilter
-          : [
-              '==',
-              ['id'],
-              feature.id,
-            ],
+      _idFilter(feature?.id ?? ''),
     );
   }
 
@@ -121,7 +112,7 @@ class MapLayerRenderer {
     );
   }
 
-  Future<void> showDeviceLocation(DeviceLocation location) {
+  Future<void> showUserLocation(DeviceLocation location) {
     return _controller.setGeoJsonSource(_userSourceId, {
       'type': 'FeatureCollection',
       'features': [
@@ -141,7 +132,7 @@ class MapLayerRenderer {
     await _controller.animateCamera(
       CameraUpdate.newLatLngZoom(
         LatLng(location.latitude, location.longitude),
-        _userLocationZoom,
+        _focusZoom,
       ),
     );
   }
@@ -155,7 +146,7 @@ class MapLayerRenderer {
 
     if (points.length == 1) {
       await _controller.animateCamera(
-        CameraUpdate.newLatLngZoom(points.single, _singlePointZoom),
+        CameraUpdate.newLatLngZoom(points.single, _focusZoom),
       );
       return;
     }
@@ -180,4 +171,10 @@ class MapLayerRenderer {
       ),
     );
   }
+
+  static List<Object> _idFilter(String id) => [
+    '==',
+    ['id'],
+    id,
+  ];
 }
