@@ -48,12 +48,11 @@ class MapViewModel extends ChangeNotifier {
     _notify();
   }
 
-  LayerFeature? selectFeature(String id) {
+  void selectFeature(String id) {
     final feature = _layer?.featureById(id);
-    if (feature == null || feature == _selectedFeature) return feature;
+    if (feature == null || feature == _selectedFeature) return;
     _selectedFeature = feature;
     _notify();
-    return feature;
   }
 
   void clearSelection() {
@@ -68,9 +67,9 @@ class MapViewModel extends ChangeNotifier {
 
     try {
       final location = await _locationService.getCurrentLocation();
-      _updateDeviceLocation(location);
+      _updateUserLocation(location);
       _locationSubscription ??= _locationService.watchLocation().listen(
-        _updateDeviceLocation,
+        _updateUserLocation,
         onError: (Object _) {},
       );
       return location;
@@ -80,7 +79,7 @@ class MapViewModel extends ChangeNotifier {
     }
   }
 
-  void _updateDeviceLocation(DeviceLocation location) {
+  void _updateUserLocation(DeviceLocation location) {
     _userLocation = location;
     _notify();
   }

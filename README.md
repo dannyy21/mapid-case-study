@@ -83,7 +83,7 @@ lib/
     ├── map_screen.dart             # UI composition and map event handling
     ├── map_view_model.dart         # Screen state (ChangeNotifier)
     ├── map_layer_renderer.dart     # All MapLibre source/layer/camera calls
-    └── widgets/                    # Popup, action buttons, error banner
+    └── widgets/                    # Popup + anchoring layer, action buttons, error banner
 ```
 
 ## Design notes
@@ -91,7 +91,7 @@ lib/
 - **Separation of concerns.** Services handle I/O and return plain models, `MapViewModel` owns screen state, and `MapLayerRenderer` is the only place that talks to MapLibre's layer and camera APIs. The screen connects the three. State management uses `ChangeNotifier` from the Flutter SDK, which is enough for a single screen.
 - **Native layers instead of annotations.** The data is added as a GeoJSON source with circle and symbol layers, so it is styled and hit-tested by the map engine. The user position is its own layer as well, which keeps it above the data layer.
 - **Tap handling.** `maplibre_gl` routes taps on interactive layers to `onFeatureTapped` rather than `onMapClick`, so the popup listens to `onFeatureTapped` and `onMapClick` is only used to dismiss it.
-- **Anchored popup.** The popup is a Flutter widget positioned with `toScreenLocation` and re-projected on every camera change, so it stays attached to its point. Only the popup rebuilds on camera moves, not the whole screen.
+- **Anchored popup.** `FeaturePopupLayer` positions the popup with `toScreenLocation` and re-projects it on every camera change and after the map is resized (e.g. rotation), so it stays attached to its point. Only this layer rebuilds on camera moves, not the whole screen.
 - **Data cleanup.** Some names in the source data contain corrupted characters (e.g. `TAMAN WARUNGBOTO (ʦ�ʦ�…)`). `TextSanitizer` removes these groups before the text is shown in labels or popups.
 - **Credentials.** The API key lives in `.env`, which is git-ignored, and never appears in source code. Because `flutter_dotenv` bundles `.env` as an asset, the key is still present inside the built APK; this is inherent to any client-side key. A production app would call the API through a backend proxy.
 

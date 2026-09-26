@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui' show Offset, Size;
+import 'dart:ui' show Offset, Size, VoidCallback;
 
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -100,6 +100,12 @@ class MapLayerRenderer {
     );
   }
 
+  void addCameraListener(VoidCallback listener) =>
+      _controller.addListener(listener);
+
+  void removeCameraListener(VoidCallback listener) =>
+      _controller.removeListener(listener);
+
   Future<void> highlight(LayerFeature? feature) {
     return _controller.setFilter(
       _selectedLayerId,
@@ -120,10 +126,22 @@ class MapLayerRenderer {
   Future<Offset> screenPositionOf(
     LayerFeature feature, {
     required double pixelRatio,
-  }) async {
-    final point = await _controller.toScreenLocation(
+  }) {
+    return _project(
       LatLng(feature.latitude, feature.longitude),
+      pixelRatio: pixelRatio,
     );
+  }
+
+  Future<bool> hasViewportSize(Size size, {required double pixelRatio}) async {
+    final target = _controller.cameraPosition?.target;
+    if (target == null) return true;
+    final center = await _project(target, pixelRatio: pixelRatio);
+    return (center - size.center(Offset.zero)).distance < 1;
+  }
+
+  Future<Offset> _project(LatLng latLng, {required double pixelRatio}) async {
+    final point = await _controller.toScreenLocation(latLng);
     return Offset(point.x / pixelRatio, point.y / pixelRatio);
   }
 

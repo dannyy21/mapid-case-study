@@ -94,9 +94,8 @@ void main() {
       final viewModel = buildViewModel();
       await viewModel.loadLayer();
 
-      final feature = viewModel.selectFeature('f-1');
-      expect(feature?.id, 'f-1');
-      expect(viewModel.selectedFeature, same(feature));
+      viewModel.selectFeature('f-1');
+      expect(viewModel.selectedFeature?.id, 'f-1');
 
       viewModel.clearSelection();
       expect(viewModel.selectedFeature, isNull);
@@ -106,7 +105,7 @@ void main() {
       final viewModel = buildViewModel();
       await viewModel.loadLayer();
 
-      expect(viewModel.selectFeature('missing'), isNull);
+      viewModel.selectFeature('missing');
       expect(viewModel.selectedFeature, isNull);
     });
   });
