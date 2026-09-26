@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show Offset;
 
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -110,6 +111,16 @@ class MapLayerRenderer {
     await _controller.animateCamera(
       CameraUpdate.newLatLng(LatLng(feature.latitude, feature.longitude)),
     );
+  }
+
+  Future<Offset> screenPositionOf(
+    LayerFeature feature, {
+    required double pixelRatio,
+  }) async {
+    final point = await _controller.toScreenLocation(
+      LatLng(feature.latitude, feature.longitude),
+    );
+    return Offset(point.x / pixelRatio, point.y / pixelRatio);
   }
 
   Future<void> showUserLocation(DeviceLocation location) {

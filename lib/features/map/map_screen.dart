@@ -1,10 +1,12 @@
 import 'dart:math' show Point;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../core/constants/map_constants.dart';
 import '../../data/models/device_location.dart';
+import '../../data/models/layer_feature.dart';
 import '../../data/services/location_service.dart';
 import '../../data/services/mapid_layer_service.dart';
 import 'map_layer_renderer.dart';
@@ -28,7 +30,12 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  static const _popupOffset = 14.0;
+
   late final MapViewModel _viewModel;
+  final _popupAnchor = ValueNotifier<Offset?>(null);
+  bool _anchorUpdateRunning = false;
+  bool _anchorUpdatePending = false;
   MapLibreMapController? _mapController;
   MapLayerRenderer? _renderer;
   bool _mapReady = false;
@@ -47,7 +54,10 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
-    _mapController?.onFeatureTapped.remove(_onFeatureTapped);
+    _mapController
+      ?..onFeatureTapped.remove(_onFeatureTapped)
+      ..removeListener(_updatePopupAnchor);
+    _popupAnchor.dispose();
     _viewModel
       ..removeListener(_syncMap)
       ..dispose();
@@ -55,7 +65,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _onMapCreated(MapLibreMapController controller) {
-    _mapController = controller..onFeatureTapped.add(_onFeatureTapped);
+    _mapController = controller
+      ..onFeatureTapped.add(_onFeatureTapped)
+      ..addListener(_updatePopupAnchor);
     _renderer = MapLayerRenderer(controller);
   }
 
@@ -125,8 +137,10 @@ class _MapScreenState extends State<MapScreen> {
   ) {
     final feature = _viewModel.selectFeature(id);
     if (feature == null) return;
+    _popupAnchor.value = null;
     _renderer?.highlight(feature);
     _renderer?.focusOn(feature);
+    _updatePopupAnchor();
   }
 
   void _onMapClick(Point<double> point, LatLng coordinates) =>
@@ -134,8 +148,40 @@ class _MapScreenState extends State<MapScreen> {
 
   void _clearSelection() {
     _viewModel.clearSelection();
+    _popupAnchor.value = null;
     _renderer?.highlight(null);
   }
+
+  Future<void> _updatePopupAnchor() async {
+    if (_anchorUpdateRunning) {
+      _anchorUpdatePending = true;
+      return;
+    }
+    _anchorUpdateRunning = true;
+    do {
+      _anchorUpdatePending = false;
+      await _projectSelectedFeature();
+    } while (_anchorUpdatePending && mounted);
+    _anchorUpdateRunning = false;
+  }
+
+  Future<void> _projectSelectedFeature() async {
+    final feature = _viewModel.selectedFeature;
+    final renderer = _renderer;
+    if (feature == null || renderer == null) return;
+
+    final position = await renderer.screenPositionOf(
+      feature,
+      pixelRatio: _mapPixelRatio,
+    );
+    if (mounted && _viewModel.selectedFeature == feature) {
+      _popupAnchor.value = position;
+    }
+  }
+
+  double get _mapPixelRatio => defaultTargetPlatform == TargetPlatform.android
+      ? MediaQuery.devicePixelRatioOf(context)
+      : 1;
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +193,7 @@ class _MapScreenState extends State<MapScreen> {
         onMapCreated: _onMapCreated,
         onStyleLoadedCallback: _onStyleLoaded,
         onMapClick: _onMapClick,
+        trackCameraPosition: true,
       ),
       builder: (context, map) {
         final layer = _viewModel.layer;
@@ -166,6 +213,7 @@ class _MapScreenState extends State<MapScreen> {
           body: Stack(
             children: [
               map!,
+              if (feature != null) _buildPopup(feature),
               if (layerError != null)
                 Positioned(
                   top: 16,
@@ -178,22 +226,41 @@ class _MapScreenState extends State<MapScreen> {
                 ),
             ],
           ),
-          floatingActionButton: feature == null
-              ? MapActionButtons(
-                  isLocating: _viewModel.isLocating,
-                  onLocate: _locateUser,
-                  onShowAll: layer == null ? null : _showAllPlaces,
-                )
-              : null,
-          bottomSheet: feature == null
-              ? null
-              : FeaturePopup(
-                  key: ValueKey(feature.id),
-                  feature: feature,
-                  onClose: _clearSelection,
-                ),
+          floatingActionButton: MapActionButtons(
+            isLocating: _viewModel.isLocating,
+            onLocate: _locateUser,
+            onShowAll: layer == null ? null : _showAllPlaces,
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildPopup(LayerFeature feature) {
+    return Positioned.fill(
+      child: ValueListenableBuilder<Offset?>(
+        valueListenable: _popupAnchor,
+        builder: (context, anchor, _) {
+          if (anchor == null) return const SizedBox.shrink();
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: anchor.dx,
+                top: anchor.dy - _popupOffset,
+                child: FractionalTranslation(
+                  translation: const Offset(-0.5, -1),
+                  child: FeaturePopup(
+                    key: ValueKey(feature.id),
+                    feature: feature,
+                    onClose: _clearSelection,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

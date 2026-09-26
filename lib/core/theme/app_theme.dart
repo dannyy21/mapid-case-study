@@ -6,11 +6,5 @@ abstract final class AppTheme {
   static ThemeData get light => ThemeData(
     colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
     useMaterial3: true,
-    bottomSheetTheme: const BottomSheetThemeData(
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-    ),
   );
 }

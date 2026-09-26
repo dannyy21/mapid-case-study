@@ -12,7 +12,7 @@ A Flutter app that shows a GEO MAPID data layer on top of an OpenFreeMap basemap
 
 - **Basemap** — OpenFreeMap [Liberty](https://tiles.openfreemap.org/styles/liberty) style rendered with [`maplibre_gl`](https://pub.dev/packages/maplibre_gl).
 - **GEO MAPID layer** — points from the GEO MAPID `get_layer` endpoint, drawn as a native circle layer above the basemap with name labels at higher zoom levels. The camera fits all points on load.
-- **Popup** — tapping a point highlights it and opens a sheet with its name, address, district/city and period. Tapping the map or the close button dismisses it.
+- **Popup** — tapping a point highlights it and opens a popup anchored above it with its name, address, district/city and period. The popup follows the point while the map moves; tapping the map or the close button dismisses it.
 - **User location** — requests permission, gets the current GPS position and shows it as a live-updating dot. The location button centers the map on the user.
 - **Resilience** — loading indicator, error banner with retry for the layer request, and clear messages (with a shortcut to settings) when location permission is denied or location services are off.
 
@@ -91,6 +91,7 @@ lib/
 - **Separation of concerns.** Services handle I/O and return plain models, `MapViewModel` owns screen state, and `MapLayerRenderer` is the only place that talks to MapLibre's layer and camera APIs. The screen connects the three. State management uses `ChangeNotifier` from the Flutter SDK, which is enough for a single screen.
 - **Native layers instead of annotations.** The data is added as a GeoJSON source with circle and symbol layers, so it is styled and hit-tested by the map engine. The user position is its own layer as well, which keeps it above the data layer.
 - **Tap handling.** `maplibre_gl` routes taps on interactive layers to `onFeatureTapped` rather than `onMapClick`, so the popup listens to `onFeatureTapped` and `onMapClick` is only used to dismiss it.
+- **Anchored popup.** The popup is a Flutter widget positioned with `toScreenLocation` and re-projected on every camera change, so it stays attached to its point. Only the popup rebuilds on camera moves, not the whole screen.
 - **Data cleanup.** Some names in the source data contain corrupted characters (e.g. `TAMAN WARUNGBOTO (ʦ�ʦ�…)`). `TextSanitizer` removes these groups before the text is shown in labels or popups.
 - **Credentials.** The API key lives in `.env`, which is git-ignored, and never appears in source code. Because `flutter_dotenv` bundles `.env` as an asset, the key is still present inside the built APK; this is inherent to any client-side key. A production app would call the API through a backend proxy.
 
