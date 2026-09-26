@@ -31,9 +31,13 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   static const _popupOffset = 14.0;
+  static const _popupMargin = 12.0;
 
   late final MapViewModel _viewModel;
+  final _mapAreaKey = GlobalKey();
+  final _popupKey = GlobalKey();
   final _popupAnchor = ValueNotifier<Offset?>(null);
+  bool _fitPopupPending = false;
   bool _anchorUpdateRunning = false;
   bool _anchorUpdatePending = false;
   MapLibreMapController? _mapController;
@@ -138,8 +142,8 @@ class _MapScreenState extends State<MapScreen> {
     final feature = _viewModel.selectFeature(id);
     if (feature == null) return;
     _popupAnchor.value = null;
+    _fitPopupPending = true;
     _renderer?.highlight(feature);
-    _renderer?.focusOn(feature);
     _updatePopupAnchor();
   }
 
@@ -174,9 +178,45 @@ class _MapScreenState extends State<MapScreen> {
       feature,
       pixelRatio: _mapPixelRatio,
     );
-    if (mounted && _viewModel.selectedFeature == feature) {
-      _popupAnchor.value = position;
+    if (!mounted || _viewModel.selectedFeature != feature) return;
+    _popupAnchor.value = position;
+
+    if (_fitPopupPending) {
+      _fitPopupPending = false;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _fitPopupOnScreen(feature),
+      );
     }
+  }
+
+  void _fitPopupOnScreen(LayerFeature feature) {
+    final popupBox = _popupKey.currentContext?.findRenderObject() as RenderBox?;
+    final areaBox =
+        _mapAreaKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderer = _renderer;
+    if (popupBox == null ||
+        areaBox == null ||
+        renderer == null ||
+        _viewModel.selectedFeature != feature) {
+      return;
+    }
+
+    final popupRect =
+        popupBox.localToGlobal(Offset.zero, ancestor: areaBox) & popupBox.size;
+    final delta = _overflowOf(popupRect, areaBox.size);
+    if (delta == Offset.zero) return;
+
+    renderer.panBy(delta, mapSize: areaBox.size, pixelRatio: _mapPixelRatio);
+  }
+
+  static Offset _overflowOf(Rect rect, Size area) {
+    final dx = rect.left < _popupMargin
+        ? rect.left - _popupMargin
+        : rect.right > area.width - _popupMargin
+        ? rect.right - (area.width - _popupMargin)
+        : 0.0;
+    final dy = rect.top < _popupMargin ? rect.top - _popupMargin : 0.0;
+    return Offset(dx, dy);
   }
 
   double get _mapPixelRatio => defaultTargetPlatform == TargetPlatform.android
@@ -194,6 +234,8 @@ class _MapScreenState extends State<MapScreen> {
         onStyleLoadedCallback: _onStyleLoaded,
         onMapClick: _onMapClick,
         trackCameraPosition: true,
+        rotateGesturesEnabled: false,
+        compassEnabled: false,
       ),
       builder: (context, map) {
         final layer = _viewModel.layer;
@@ -211,6 +253,7 @@ class _MapScreenState extends State<MapScreen> {
                 : null,
           ),
           body: Stack(
+            key: _mapAreaKey,
             children: [
               map!,
               if (feature != null) _buildPopup(feature),
@@ -251,7 +294,7 @@ class _MapScreenState extends State<MapScreen> {
                 child: FractionalTranslation(
                   translation: const Offset(-0.5, -1),
                   child: FeaturePopup(
-                    key: ValueKey(feature.id),
+                    key: _popupKey,
                     feature: feature,
                     onClose: _clearSelection,
                   ),

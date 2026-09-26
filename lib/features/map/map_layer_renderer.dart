@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'dart:ui' show Offset;
+import 'dart:ui' show Offset, Size;
 
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -107,10 +107,14 @@ class MapLayerRenderer {
     );
   }
 
-  Future<void> focusOn(LayerFeature feature) async {
-    await _controller.animateCamera(
-      CameraUpdate.newLatLng(LatLng(feature.latitude, feature.longitude)),
-    );
+  Future<void> panBy(
+    Offset delta, {
+    required Size mapSize,
+    required double pixelRatio,
+  }) async {
+    final center = mapSize.center(delta) * pixelRatio;
+    final target = await _controller.toLatLng(math.Point(center.dx, center.dy));
+    await _controller.animateCamera(CameraUpdate.newLatLng(target));
   }
 
   Future<Offset> screenPositionOf(
