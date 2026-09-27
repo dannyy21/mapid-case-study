@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'layer_feature.dart';
 
 class MapLayer {
@@ -34,6 +36,16 @@ class MapLayer {
       if (feature.id == id) return feature;
     }
     return null;
+  }
+
+  bool isNear(double latitude, double longitude, {double marginDegrees = 0.1}) {
+    if (features.isEmpty) return false;
+    final latitudes = features.map((f) => f.latitude);
+    final longitudes = features.map((f) => f.longitude);
+    return latitude >= latitudes.reduce(math.min) - marginDegrees &&
+        latitude <= latitudes.reduce(math.max) + marginDegrees &&
+        longitude >= longitudes.reduce(math.min) - marginDegrees &&
+        longitude <= longitudes.reduce(math.max) + marginDegrees;
   }
 
   Map<String, dynamic> toGeoJson() => {

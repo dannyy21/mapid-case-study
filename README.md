@@ -13,7 +13,7 @@ A Flutter app that shows a GEO MAPID data layer on top of an OpenFreeMap basemap
 - **Basemap** — OpenFreeMap [Liberty](https://tiles.openfreemap.org/styles/liberty) style rendered with [`maplibre_gl`](https://pub.dev/packages/maplibre_gl).
 - **GEO MAPID layer** — points from the GEO MAPID `get_layer` endpoint, drawn as a native circle layer above the basemap with name labels at higher zoom levels. The camera fits all points on load.
 - **Popup** — tapping a point highlights it and opens a popup anchored above it with its name, address, district/city and period. If the popup would not fit on screen (e.g. in landscape or near an edge), the map pans just enough to show it fully. The popup follows the point while the map moves; tapping the map or the close button dismisses it.
-- **User location** — requests permission, gets the current GPS position and shows it as a live-updating dot. The location button centers the map on the user.
+- **User location** — requests permission, gets the current GPS position and shows it as a live-updating dot. The location button centers the map on the user, and says so with a shortcut back to the places when the user is outside the layer area (the sample data is in Yogyakarta).
 - **Resilience** — loading indicator, error banner with retry for the layer request, and clear messages (with a shortcut to settings) when location permission is denied or location services are off.
 
 ## Getting started

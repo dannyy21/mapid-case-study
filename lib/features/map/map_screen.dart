@@ -106,10 +106,32 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _locateUser({bool focus = true}) async {
     try {
       final location = await _viewModel.locateUser();
-      if (focus) await _renderer?.focusOnUser(location);
+      if (!focus) return;
+      await _renderer?.focusOnUser(location);
+      _hintIfOutsideLayer(location);
     } on LocationException catch (e) {
       _showLocationError(e);
     }
+  }
+
+  void _hintIfOutsideLayer(DeviceLocation location) {
+    final layer = _viewModel.layer;
+    if (!mounted ||
+        layer == null ||
+        layer.isNear(location.latitude, location.longitude)) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('No ${layer.name} places near your location.'),
+          action: SnackBarAction(
+            label: 'Show places',
+            onPressed: _showAllPlaces,
+          ),
+        ),
+      );
   }
 
   void _showLocationError(LocationException error) {

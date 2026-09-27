@@ -109,4 +109,15 @@ void main() {
 
     expect(service.fetchLayer(), throwsAppException('timed out'));
   });
+
+  test('tells whether a location is near the layer', () async {
+    final service = buildService(
+      (_) async => http.Response.bytes(fixture, 200),
+    );
+
+    final layer = await service.fetchLayer();
+
+    expect(layer.isNear(-7.80, 110.37), isTrue);
+    expect(layer.isNear(-6.88, 107.54), isFalse);
+  });
 }
