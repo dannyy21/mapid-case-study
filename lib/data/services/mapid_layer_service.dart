@@ -13,7 +13,9 @@ class MapidLayerService {
     required String layerId,
     required String projectId,
     http.Client? client,
-    this.timeout = const Duration(seconds: 15),
+    this.timeout = const Duration(seconds: 10),
+    this.maxAttempts = 2,
+    this.retryDelay = const Duration(seconds: 1),
   }) : _client = client ?? http.Client(),
        _uri = Uri.parse(baseUrl)
            .resolve('layers_new/get_layer')
@@ -28,16 +30,11 @@ class MapidLayerService {
   final http.Client _client;
   final Uri _uri;
   final Duration timeout;
+  final int maxAttempts;
+  final Duration retryDelay;
 
   Future<MapLayer> fetchLayer() async {
-    final http.Response response;
-    try {
-      response = await _client.get(_uri).timeout(timeout);
-    } on TimeoutException {
-      throw const AppException('Request timed out. Please try again.');
-    } on http.ClientException {
-      throw const AppException('No internet connection. Please try again.');
-    }
+    final response = await _getWithRetry();
 
     if (response.statusCode != 200) {
       throw AppException('Failed to load layer (HTTP ${response.statusCode}).');
@@ -51,6 +48,23 @@ class MapidLayerService {
       return MapLayer.fromJson(body);
     } on FormatException {
       throw const AppException('Received invalid layer data.');
+    }
+  }
+
+  Future<http.Response> _getWithRetry() async {
+    for (var attempt = 1; ; attempt++) {
+      try {
+        return await _client.get(_uri).timeout(timeout);
+      } on TimeoutException {
+        if (attempt >= maxAttempts) {
+          throw const AppException('Request timed out. Please try again.');
+        }
+      } on http.ClientException {
+        if (attempt >= maxAttempts) {
+          throw const AppException('No internet connection. Please try again.');
+        }
+      }
+      await Future<void>.delayed(retryDelay);
     }
   }
 

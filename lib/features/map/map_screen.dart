@@ -12,6 +12,7 @@ import 'map_layer_renderer.dart';
 import 'map_view_model.dart';
 import 'widgets/feature_popup_layer.dart';
 import 'widgets/layer_error_banner.dart';
+import 'widgets/loading_chip.dart';
 import 'widgets/map_action_buttons.dart';
 
 class MapScreen extends StatefulWidget {
@@ -178,15 +179,7 @@ class _MapScreenState extends State<MapScreen> {
         final renderer = _renderer;
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(layer?.name ?? 'MAPID Map'),
-            bottom: _viewModel.layerStatus == LayerStatus.loading
-                ? const PreferredSize(
-                    preferredSize: Size.fromHeight(4),
-                    child: LinearProgressIndicator(),
-                  )
-                : null,
-          ),
+          appBar: AppBar(title: Text(layer?.name ?? 'MAPID Map')),
           body: Stack(
             children: [
               map!,
@@ -197,6 +190,13 @@ class _MapScreenState extends State<MapScreen> {
                     feature: feature,
                     onClose: _viewModel.clearSelection,
                   ),
+                ),
+              if (_viewModel.layerStatus == LayerStatus.loading)
+                const Positioned(
+                  top: 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: LoadingChip(label: 'Loading places…')),
                 ),
               if (layerError != null)
                 Positioned(

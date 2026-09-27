@@ -18,6 +18,7 @@ void main() {
       projectId: 'project-1',
       client: MockClient(handler),
       timeout: const Duration(milliseconds: 50),
+      retryDelay: Duration.zero,
     );
   }
 
@@ -119,5 +120,46 @@ void main() {
 
     expect(layer.isNear(-7.80, 110.37), isTrue);
     expect(layer.isNear(-6.88, 107.54), isFalse);
+  });
+
+  group('retry', () {
+    test('recovers when the first attempt fails', () async {
+      var calls = 0;
+      final service = buildService((_) async {
+        calls++;
+        if (calls == 1) throw http.ClientException('offline');
+        return http.Response.bytes(fixture, 200);
+      });
+
+      final layer = await service.fetchLayer();
+
+      expect(calls, 2);
+      expect(layer.features, hasLength(2));
+    });
+
+    test('gives up after the maximum attempts', () async {
+      var calls = 0;
+      final service = buildService((_) async {
+        calls++;
+        throw http.ClientException('offline');
+      });
+
+      await expectLater(
+        service.fetchLayer(),
+        throwsAppException('No internet connection'),
+      );
+      expect(calls, 2);
+    });
+
+    test('does not retry server responses', () async {
+      var calls = 0;
+      final service = buildService((_) async {
+        calls++;
+        return http.Response('Forbidden', 403);
+      });
+
+      await expectLater(service.fetchLayer(), throwsAppException('HTTP 403'));
+      expect(calls, 1);
+    });
   });
 }
